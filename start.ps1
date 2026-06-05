@@ -38,7 +38,7 @@ docker compose up -d
 Start-Sleep -Seconds 3
 
 # 3) Free ports 3000 / 3001 if stuck from old session
-Write-Host "[3/4] Freeing ports if needed..." -ForegroundColor Yellow
+Write-Host "[3/5] Freeing ports if needed..." -ForegroundColor Yellow
 foreach ($port in @(3000, 3001)) {
   $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($conn) {
@@ -51,11 +51,15 @@ foreach ($port in @(3000, 3001)) {
   }
 }
 
-# 4) Start app
-Write-Host "[4/4] Starting web + API..." -ForegroundColor Yellow
+# 4) Public tunnel for Vercel / mobile
+Write-Host "[4/5] Starting online tunnel..." -ForegroundColor Yellow
+& "$root\scripts\online-tunnel.ps1" | Out-Null
+
+# 5) Start app
+Write-Host "[5/5] Starting web + API..." -ForegroundColor Yellow
 Write-Host "`n  Web:  http://localhost:3000" -ForegroundColor Green
-Write-Host "  API:  http://localhost:3001/api/v1/health`n" -ForegroundColor Green
-Write-Host "For Vercel/mobile: keep this window open, then run ONLINE.bat in another window.`n" -ForegroundColor DarkGray
+Write-Host "  API:  http://localhost:3001/api/v1/health" -ForegroundColor Green
+Write-Host "  Mobile: https://web-three-sigma-54.vercel.app (keep this window open)`n" -ForegroundColor Green
 
 Start-Process "http://localhost:3000"
 npm run dev

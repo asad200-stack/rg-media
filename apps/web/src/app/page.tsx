@@ -13,7 +13,7 @@ export default async function HomePage() {
   try {
     summary = await api<DashboardSummary>('/dashboard/summary');
   } catch {
-    error = 'Connect the API and database — run START.bat';
+    error = 'API not reachable. On your PC run START.bat + ONLINE.bat, or deploy API on Render.';
   }
 
   return (

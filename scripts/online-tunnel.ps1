@@ -27,10 +27,13 @@ for ($i = 0; $i -lt 30; $i++) {
 
 if ($tunnelUrl) {
   Write-Host "`nTunnel: $tunnelUrl" -ForegroundColor Green
-  Write-Host "Update Vercel if URL changed:"
-  Write-Host "  cd apps\web"
-  Write-Host "  vercel env add API_URL production --value `"$tunnelUrl`" --force"
-  Write-Host "  vercel deploy --prod --yes`n"
+  $webDir = Join-Path $root "apps\web"
+  if (Get-Command vercel -ErrorAction SilentlyContinue) {
+    Push-Location $webDir
+    vercel env add API_URL production --value $tunnelUrl --force 2>$null | Out-Null
+    Pop-Location
+    Write-Host "Vercel API_URL updated." -ForegroundColor Green
+  }
 } else {
   Write-Host "Tunnel starting — check $log" -ForegroundColor Yellow
 }
