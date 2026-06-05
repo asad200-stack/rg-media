@@ -55,7 +55,7 @@ foreach ($port in @(3000, 3001)) {
 Write-Host "[4/4] Starting web + API..." -ForegroundColor Yellow
 Write-Host "`n  Web:  http://localhost:3000" -ForegroundColor Green
 Write-Host "  API:  http://localhost:3001/api/v1/health`n" -ForegroundColor Green
-Write-Host "Keep this window open. Press Ctrl+C to stop.`n" -ForegroundColor DarkGray
+Write-Host "For Vercel/mobile: keep this window open, then run ONLINE.bat in another window.`n" -ForegroundColor DarkGray
 
 Start-Process "http://localhost:3000"
 npm run dev
