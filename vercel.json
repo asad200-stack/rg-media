@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm run build -w @rg-media/web",
+  "installCommand": "npm ci",
+  "outputDirectory": "apps/web/.next",
+  "framework": null
+}

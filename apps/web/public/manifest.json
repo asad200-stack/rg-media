@@ -1,0 +1,11 @@
+{
+  "name": "RG Media Content Operations",
+  "short_name": "RG Media",
+  "description": "Content production and publishing platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#6c5ce7",
+  "orientation": "portrait-primary",
+  "icons": []
+}

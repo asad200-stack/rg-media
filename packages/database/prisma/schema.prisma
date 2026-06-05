@@ -1,0 +1,353 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  TEAM_LEADER
+  EMPLOYEE
+  CLIENT_PORTAL
+}
+
+enum ContentWorkflowStatus {
+  IDEA
+  PLANNED
+  APPROVED_FOR_PRODUCTION
+  SCHEDULED_FOR_SHOOTING
+  SHOT
+  EDITING
+  REVIEW
+  REVISION_REQUIRED
+  APPROVED
+  SCHEDULED_FOR_PUBLISHING
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PublishingStatus {
+  PENDING
+  SCHEDULED
+  PUBLISHED
+  FAILED
+  NEEDS_REVISION
+}
+
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Platform {
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+  FACEBOOK
+  LINKEDIN
+  OTHER
+}
+
+enum ApprovalStatus {
+  DRAFT
+  INTERNAL_REVIEW
+  MANAGER_APPROVAL
+  CLIENT_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum ShootingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  SHOOT_REMINDER
+  PUBLISH_REMINDER
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+  DEADLINE_MISSED
+  NEW_COMMENT
+  STATUS_CHANGED
+  SYSTEM
+}
+
+enum ContentType {
+  REEL
+  SHORT
+  STORY
+  CAROUSEL
+  STATIC_POST
+  ADVERTISEMENT
+  OTHER
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         UserRole  @default(EMPLOYEE)
+  locale       String    @default("en")
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assignedContent ContentItem[] @relation("AssignedTo")
+  videographerOn  ContentItem[] @relation("Videographer")
+  editorOn        ContentItem[] @relation("Editor")
+  designerOn      ContentItem[] @relation("Designer")
+  copywriterOn    ContentItem[] @relation("Copywriter")
+  auditLogs       AuditLog[]
+  comments        Comment[]
+  notifications   Notification[]
+  refreshTokens   RefreshToken[]
+  assignedTasks   Task[]         @relation("TaskAssignee")
+}
+
+model Client {
+  id              String   @id @default(cuid())
+  name            String
+  companyName     String?
+  brandName       String?
+  industry        String?
+  accountManager  String?
+  contactEmail    String?
+  contactPhone    String?
+  socialMedia     Json?
+  contractNotes   String?  @db.Text
+  monthlyDeliverables Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  contentItems ContentItem[]
+  campaigns    Campaign[]
+  shootingSessions ShootingSession[]
+
+  @@index([name])
+}
+
+model Campaign {
+  id        String   @id @default(cuid())
+  clientId  String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  contentItems ContentItem[]
+}
+
+model ContentItem {
+  id              String                @id @default(cuid())
+  contentCode     String                @unique
+  clientId        String
+  campaignId      String?
+  title           String
+  description     String?               @db.Text
+  script          String?               @db.Text
+  caption         String?               @db.Text
+  cta             String?
+  hashtags        String?
+  category        String?
+  contentType     ContentType           @default(REEL)
+  platform        Platform              @default(INSTAGRAM)
+  workflowStatus  ContentWorkflowStatus @default(PLANNED)
+  publishingStatus PublishingStatus     @default(PENDING)
+  priority        PriorityLevel         @default(MEDIUM)
+  filmingDate     DateTime?             @db.Date
+  shootStartTime  String?
+  publishingDate  DateTime?             @db.Date
+  publishTime     String?
+  publishedUrl    String?
+  scriptDocUrl    String?
+  approvalStatus  ApprovalStatus        @default(DRAFT)
+  assignedToId    String?
+  videographerId  String?
+  editorId        String?
+  designerId      String?
+  copywriterId    String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  client       Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  campaign     Campaign?           @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  assignedTo   User?               @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  videographer User?               @relation("Videographer", fields: [videographerId], references: [id], onDelete: SetNull)
+  editor       User?               @relation("Editor", fields: [editorId], references: [id], onDelete: SetNull)
+  designer     User?               @relation("Designer", fields: [designerId], references: [id], onDelete: SetNull)
+  copywriter   User?               @relation("Copywriter", fields: [copywriterId], references: [id], onDelete: SetNull)
+  references   ContentReference[]
+  notes        ContentNote[]
+  tasks        Task[]
+  comments     Comment[]
+  attachments  FileAttachment[]
+  shootingSessions ShootingSession[]
+  approvals    ApprovalRecord[]
+
+  @@index([clientId, filmingDate])
+  @@index([workflowStatus])
+  @@index([publishingStatus])
+  @@index([filmingDate])
+}
+
+model ContentReference {
+  id            String   @id @default(cuid())
+  contentItemId String
+  url           String
+  label         String?
+  createdAt     DateTime @default(now())
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+}
+
+model ContentNote {
+  id            String   @id @default(cuid())
+  contentItemId String
+  body          String   @db.Text
+  createdAt     DateTime @default(now())
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id            String        @id @default(cuid())
+  contentItemId String
+  title         String
+  isCompleted   Boolean       @default(false)
+  priority      PriorityLevel @default(MEDIUM)
+  dueAt         DateTime?
+  assigneeId    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  assignee    User?       @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+}
+
+model Comment {
+  id            String   @id @default(cuid())
+  contentItemId String
+  authorId      String
+  body          String   @db.Text
+  isResolved    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model FileAttachment {
+  id            String   @id @default(cuid())
+  contentItemId String
+  fileName      String
+  mimeType      String
+  storageKey    String
+  version       Int      @default(1)
+  createdAt     DateTime @default(now())
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  oldValue   Json?
+  newValue   Json?
+  deviceInfo String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model CalendarMarker {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  label     String
+  markerType String
+  createdAt DateTime @default(now())
+
+  @@unique([date, label])
+}
+
+model ShootingSession {
+  id              String         @id @default(cuid())
+  clientId        String
+  contentItemId   String?
+  date            DateTime       @db.Date
+  startTime       String?
+  location        String?
+  status          ShootingStatus @default(SCHEDULED)
+  equipmentNotes  String?        @db.Text
+  teamNotes       String?        @db.Text
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  contentItem ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  body      String           @db.Text
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model ApprovalRecord {
+  id            String         @id @default(cuid())
+  contentItemId String
+  status        ApprovalStatus
+  approvedById  String?
+  feedback      String?        @db.Text
+  createdAt     DateTime       @default(now())
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SavedView {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  filters   Json
+  createdAt DateTime @default(now())
+}
