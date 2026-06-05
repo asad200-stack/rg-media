@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+if [ -n "$DATABASE_URL" ] && ! echo "$DATABASE_URL" | grep -q "sslmode="; then
+  export DATABASE_URL="${DATABASE_URL}?sslmode=require"
+fi
+
 echo "Applying database schema..."
 npm run push -w @rg-media/database
 

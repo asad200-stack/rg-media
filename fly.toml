@@ -1,0 +1,21 @@
+app = 'rg-media-api'
+primary_region = 'fra'
+
+[build]
+  dockerfile = 'apps/api/Dockerfile'
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    path = '/api/v1/health'
+
+[env]
+  RUN_SEED = 'true'
+  WEB_ORIGIN = 'https://web-three-sigma-54.vercel.app'
